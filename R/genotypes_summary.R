@@ -95,7 +95,10 @@ genotypes_summary <- function(
 
   message.genotypes <- paste("Importing ", genotypes, sep = "" )
   message(message.genotypes)
-  genotypes.file <- readr::read_tsv(file = genotypes, col_names = c("SQL_ID", "BATCH_ID", "LOCUS", "INDIVIDUALS", "GENOTYPES"), col_types = "iiiic", skip =1, progress = interactive())
+  genotypes.file <- readr::read_tsv(file = genotypes, 
+                                    col_names = c("SQL_ID", "BATCH_ID", "LOCUS", "INDIVIDUALS", "GENOTYPES"), 
+                                    col_types = "iiiic", skip =1, progress = interactive()) %>% 
+                    dplyr::mutate(GENOTYPES=tolower(GENOTYPES)) 
 
   message.markers <- paste("Importing ", markers, sep = "" )
   message(message.markers)
@@ -105,7 +108,7 @@ genotypes_summary <- function(
     dplyr::select(LOCUS, INDIVIDUALS, GENOTYPES) %>%
     dplyr::group_by(LOCUS, GENOTYPES) %>%
     dplyr::summarize(COUNT = n()) %>%
-    tidyr::spread(GENOTYPES, COUNT, -LOCUS) %>%
+    tidyr::spread(GENOTYPES, COUNT, fill=0.01) %>%
     merge(markers.file, by = "LOCUS") %>%
     dplyr::mutate(
       PATTERN = stringi::stri_replace_all_fixed(TYPE, c("--/ab", "aa/ab", "ab/--", "ab/aa","ab/ab", "ab/ac", "ab/cd"),
@@ -309,7 +312,7 @@ genotypes_summary <- function(
   # pattern summary
   joinmap.sum <- geno.sum %>%
     dplyr::group_by(JOINMAP) %>%
-    dplyr::tally(.) %>%
+    dplyr::tally(.) %>% 
     dplyr::rename(MARKER_NUMBER = n)
 
   onemap.sum <- geno.sum %>%
